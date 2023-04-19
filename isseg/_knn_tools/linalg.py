@@ -4,16 +4,22 @@ from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 from sklearn.preprocessing import OneHotEncoder
 
 
-def connectivity_matrix(xy:np.ndarray, method='knn', k:int=5, r:float=None, include_self:bool=False)->sp.spmatrix:
+def connectivity_matrix(
+    xy: np.ndarray,
+    method="knn",
+    k: int = 5,
+    r: float = None,
+    include_self: bool = False,
+) -> sp.spmatrix:
     """
     Compute the connectivity matrix of a dataset based on either k-NN or radius search.
-    
+
     Parameters
     ----------
     xy : np.ndarray
         The input dataset, where each row is a sample point.
     method : str, optional (default='knn')
-        The method to use for computing the connectivity. 
+        The method to use for computing the connectivity.
         Can be either 'knn' for k-nearest-neighbors or 'radius' for radius search.
     k : int, optional (default=5)
         The number of nearest neighbors to use when method='knn'.
@@ -21,22 +27,25 @@ def connectivity_matrix(xy:np.ndarray, method='knn', k:int=5, r:float=None, incl
         The radius to use when method='radius'.
     include_self : bool, optional (default=False)
         If the matrix should contain self connectivities.
-    
+
     Returns
     -------
     A : sp.spmatrix
         The connectivity matrix, with ones in the positions where two points are connected.
     """
-    if method == 'knn':
+    if method == "knn":
         A = kneighbors_graph(xy, k, include_self=include_self)
     else:
         A = radius_neighbors_graph(xy, r, include_self=include_self)
     return A
 
-def attribute_matrix(cat:np.ndarray, unique_cat:np.ndarray='auto', return_encoder:bool=False):
+
+def attribute_matrix(
+    cat: np.ndarray, unique_cat: np.ndarray = "auto", return_encoder: bool = False
+):
     """
     Compute the attribute matrix from categorical data, based on one-hot encoding.
-    
+
     Parameters
     ----------
     cat : np.ndarray
@@ -46,7 +55,7 @@ def attribute_matrix(cat:np.ndarray, unique_cat:np.ndarray='auto', return_encode
         are automatically determined from cat.
     return_encoder : bool, optional (default=False)
         Whether to return the encoder object, in addition to the attribute matrix and categories list.
-    
+
     Returns
     -------
     y : sp.spmatrix
@@ -56,10 +65,10 @@ def attribute_matrix(cat:np.ndarray, unique_cat:np.ndarray='auto', return_encode
     encoder : OneHotEncoder
         The encoder object, only returned if `return_encoder` is True.
     """
-    X = np.array(cat).reshape((-1,1))
-    if unique_cat != 'auto':
+    X = np.array(cat).reshape((-1, 1))
+    if unique_cat != "auto":
         unique_cat = [np.array(unique_cat)]
-    encoder = OneHotEncoder(categories=unique_cat, sparse=True, handle_unknown='ignore')
+    encoder = OneHotEncoder(categories=unique_cat, sparse=True, handle_unknown="ignore")
     encoder.fit(X)
     y = encoder.transform(X)
     categories = list(encoder.categories_[0])
@@ -67,15 +76,16 @@ def attribute_matrix(cat:np.ndarray, unique_cat:np.ndarray='auto', return_encode
         return y, categories, encoder
     return y, categories
 
-def degree_matrix(A:sp.spmatrix)->sp.spmatrix:
+
+def degree_matrix(A: sp.spmatrix) -> sp.spmatrix:
     """
     Calculates the degree matrix of a given matrix.
-    
+
     Parameters:
     -----------
     A : sp.spmatrix
         The input matrix.
-        
+
     Returns:
     --------
     sp.spmatrix
@@ -84,17 +94,18 @@ def degree_matrix(A:sp.spmatrix)->sp.spmatrix:
     D = np.array(A.sum(axis=1)).ravel()
     return sp.csr_matrix(sp.diags(D, 0))
 
-def _adj2laplacian(A:sp.spmatrix, return_degree:bool=False)->sp.spmatrix:
+
+def _adj2laplacian(A: sp.spmatrix, return_degree: bool = False) -> sp.spmatrix:
     """
     Converts a sparse matrix representation of an affinity graph to a Laplacian matrix.
-    
+
     Parameters:
     -----------
     A : sp.spmatrix
         The input affinity matrix.
     return_degree : bool, optional
         If True, returns both the Laplacian matrix and the degree matrix. Default is False.
-        
+
     Returns:
     --------
     sp.spmatrix or tuple
@@ -104,12 +115,13 @@ def _adj2laplacian(A:sp.spmatrix, return_degree:bool=False)->sp.spmatrix:
     aff_tilde = A + sp.eye(*A.shape)
     D = degree_matrix(aff_tilde)
     L = D - aff_tilde
-    return (L,D) if return_degree else L 
+    return (L, D) if return_degree else L
 
-def proximity_matrix(A:sp.spmatrix, gamma:float=1.0, hops:int=1)->sp.spmatrix:
+
+def proximity_matrix(A: sp.spmatrix, gamma: float = 1.0, hops: int = 1) -> sp.spmatrix:
     """
     Calculates the proximity matrix of a given matrix.
-    
+
     Parameters:
     -----------
     A : sp.spmatrix
@@ -118,7 +130,7 @@ def proximity_matrix(A:sp.spmatrix, gamma:float=1.0, hops:int=1)->sp.spmatrix:
         The decay factor for the proximity matrix. Default is 1.0.
     hops : int, optional
         The number of hops to calculate. Default is 1.
-        
+
     Returns:
     --------
     sp.spmatrix
@@ -127,14 +139,16 @@ def proximity_matrix(A:sp.spmatrix, gamma:float=1.0, hops:int=1)->sp.spmatrix:
     L, D = _adj2laplacian(A, return_degree=True)
     I = sp.eye(*D.shape)
     D_inv = sp.csr_matrix(sp.diags(1.0 / (D.diagonal() + 1e-12), 0))
-    P = (I - gamma * D_inv @ L)**hops
+    P = (I - gamma * D_inv @ L) ** hops
     return P
 
 
-def proximity_matrix_multiply(A:sp.spmatrix, y:sp.spmatrix, gamma:float=1.0, hops:int=1)->sp.spmatrix:
+def proximity_matrix_multiply(
+    A: sp.spmatrix, y: sp.spmatrix, gamma: float = 1.0, hops: int = 1
+) -> sp.spmatrix:
     """
     Calculates the proximity matrix of a given matrix.
-    
+
     Parameters:
     -----------
     A : sp.spmatrix
@@ -145,7 +159,7 @@ def proximity_matrix_multiply(A:sp.spmatrix, y:sp.spmatrix, gamma:float=1.0, hop
         The decay factor for the proximity matrix. Default is 1.0.
     hops : int, optional
         The number of hops to calculate. Default is 1.
-        
+
     Returns:
     --------
     sp.spmatrix
@@ -154,23 +168,23 @@ def proximity_matrix_multiply(A:sp.spmatrix, y:sp.spmatrix, gamma:float=1.0, hop
     P = proximity_matrix(A, gamma, hops=1)
     out = P @ y
     if hops > 1:
-        for _ in range(hops-1):
+        for _ in range(hops - 1):
             out = P @ out
     return out
 
 
-def maximal_degree_matrix(A:sp.spmatrix)->sp.spmatrix:
+def maximal_degree_matrix(A: sp.spmatrix) -> sp.spmatrix:
     """
-    Given an adjacency matrix A, returns a binary matrix representing a maximal independent set of the graph described by A. 
+    Given an adjacency matrix A, returns a binary matrix representing a maximal independent set of the graph described by A.
     A maximal independent set is a set of vertices such that no two vertices are connected by an edge, and it is not possible
     to add any vertices to the set.
-    
+
     Parameters:
     A (sp.spmatrix): The input adjacency matrix.
-    
+
     Returns:
     sp.spmatrix: A binary matrix representing a maximal independent set of the graph described by A.
-    
+
     """
     # Sort vertices based on degree
     degree = A.sum(axis=1).A.ravel()
@@ -188,12 +202,12 @@ def maximal_degree_matrix(A:sp.spmatrix)->sp.spmatrix:
     values = np.ones(n)
     cols = np.sort(list(independent))
     rows = np.arange(n)
-    return sp.csr_matrix((values,(rows,cols)), shape=(n,A.shape[0]))
+    return sp.csr_matrix((values, (rows, cols)), shape=(n, A.shape[0]))
 
 
-
-
-def spatial_binning_matrix(xy:np.ndarray, box_width:float, return_size:bool=False) -> sp.spmatrix:
+def spatial_binning_matrix(
+    xy: np.ndarray, box_width: float, return_size: bool = False
+) -> sp.spmatrix:
     """
     Compute a sparse matrix that indicates which points in a point cloud fall in which hyper-rectangular bins.
 
@@ -214,8 +228,6 @@ def spatial_binning_matrix(xy:np.ndarray, box_width:float, return_size:bool=Fals
      [0 0 1 1]]
     """
 
-
-
     # Compute shifted coordinates
     mi, ma = xy.min(axis=0, keepdims=True), xy.max(axis=0, keepdims=True)
     xys = xy - mi
@@ -226,16 +238,18 @@ def spatial_binning_matrix(xy:np.ndarray, box_width:float, return_size:bool=Fals
 
     # Compute bin index
     bin_ids = xys // box_width
-    bin_ids = bin_ids.astype('int')
+    bin_ids = bin_ids.astype("int")
     bin_ids = tuple(x for x in bin_ids.T)
 
     # Compute grid size in indices
     size = grid // box_width + 1
-    size = tuple(x for x in size.astype('int'))
+    size = tuple(x for x in size.astype("int"))
 
     # All gird coordinates
-    all_grid_coords = tuple(s.flatten() for s in np.meshgrid(*tuple(np.arange(s) for s in size)))
-    all_linear_coords = np.ravel_multi_index(all_grid_coords, size, order='F')
+    all_grid_coords = tuple(
+        s.flatten() for s in np.meshgrid(*tuple(np.arange(s) for s in size))
+    )
+    all_linear_coords = np.ravel_multi_index(all_grid_coords, size, order="F")
 
     # Convert bin_ids to integers
     linear_ind = np.ravel_multi_index(bin_ids, size)
@@ -244,11 +258,10 @@ def spatial_binning_matrix(xy:np.ndarray, box_width:float, return_size:bool=Fals
     bin_matrix, _ = attribute_matrix(linear_ind, unique_cat=all_linear_coords)
     bin_matrix = bin_matrix.T
 
+    return (bin_matrix, size) if return_size else bin_matrix
 
-    return (bin_matrix, size) if return_size else bin_matrix 
 
-
-def kde(xy:np.ndarray, sigma:float, box_width:float=1) -> np.ndarray:
+def kde(xy: np.ndarray, sigma: float, box_width: float = 1) -> np.ndarray:
     """
     Computes a 2D kernel density estimate for the input array of points.
 
@@ -287,23 +300,24 @@ def kde(xy:np.ndarray, sigma:float, box_width:float=1) -> np.ndarray:
 
     # Find which molecule belong to what bin
     molecule2bin = (xy - xy.min(axis=0, keepdims=True)) // box_width
-    molecule2bin = molecule2bin.astype('int')
+    molecule2bin = molecule2bin.astype("int")
     molecule2bin = tuple(x for x in molecule2bin.T)
-    
+
     # Look up densities
     densities = image[molecule2bin]
     return densities
 
 
 def _make_gaussian(sigma, shape):
-    mu = np.arange(shape).reshape((-1,1))
+    mu = np.arange(shape).reshape((-1, 1))
     x = np.arange(shape)
-    d2 = (mu - x)**2 
-    gaussian = np.exp(-d2/ (2*sigma*sigma)) * (d2<(9*sigma*sigma))
-    gaussian = gaussian / gaussian.max(axis=1,keepdims=True)
+    d2 = (mu - x) ** 2
+    gaussian = np.exp(-d2 / (2 * sigma * sigma)) * (d2 < (9 * sigma * sigma))
+    gaussian = gaussian / gaussian.max(axis=1, keepdims=True)
     return gaussian
 
-def kde_per_label(xy:np.ndarray, labels:np.ndarray, sigma:float):
+
+def kde_per_label(xy: np.ndarray, labels: np.ndarray, sigma: float):
     """
     Computes the kernel density estimation (KDE) for each label in `labels`, using the data points in `xy` as inputs.
     Returns the KDE values as an attribute matrix, and the unique labels found in `labels`.
@@ -326,14 +340,22 @@ def kde_per_label(xy:np.ndarray, labels:np.ndarray, sigma:float):
         - `unique_labels`: A 1D numpy array containing the unique labels found in `labels`.
     """
     att, unqiue_labels = attribute_matrix(labels)
-    adj = connectivity_matrix(xy, method='radius', r=3.0*sigma)
-    row,col = adj.nonzero()
-    d2 = np.linalg.norm(xy[row]-xy[col], axis=1)**2
-    a2  = np.exp(-d2/ (2*sigma*sigma))
-    aff = sp.csr_matrix((a2,(row,col)), shape=adj.shape)
+    adj = connectivity_matrix(xy, method="radius", r=3.0 * sigma)
+    row, col = adj.nonzero()
+    d2 = np.linalg.norm(xy[row] - xy[col], axis=1) ** 2
+    a2 = np.exp(-d2 / (2 * sigma * sigma))
+    aff = sp.csr_matrix((a2, (row, col)), shape=adj.shape)
     return aff @ att, unqiue_labels
 
-def __kde_per_label(xy:np.ndarray, labels:np.ndarray, sigma:float, box_width:float=1.0, unique_labels='auto', progress:bool=False):
+
+def __kde_per_label(
+    xy: np.ndarray,
+    labels: np.ndarray,
+    sigma: float,
+    box_width: float = 1.0,
+    unique_labels="auto",
+    progress: bool = False,
+):
     """
     OLD
 
@@ -351,12 +373,12 @@ def __kde_per_label(xy:np.ndarray, labels:np.ndarray, sigma:float, box_width:flo
         sp.spmatrix: An M x S sparse matrix representing the KDE for each gene, where S is the total number of spatial bins.
         unique_labels: List of labels indicating the label of each feature dimension.
     """
-    
+
     A, unique_labels = attribute_matrix(labels, unique_cat=unique_labels)
 
     sigma = sigma / box_width
     # Number of molecules
-    n = len(xy)
+    len(xy)
 
     # Compute molecule to bin matrix B.
     B, size = spatial_binning_matrix(xy, box_width=box_width, return_size=True)
@@ -369,35 +391,35 @@ def __kde_per_label(xy:np.ndarray, labels:np.ndarray, sigma:float, box_width:flo
 
     # Create Gaussian filters
     GX = sp.csr_matrix(_make_gaussian(sigma, size[0]))
-    GY = sp.csr_matrix(_make_gaussian(sigma, size[1]).T) 
+    GY = sp.csr_matrix(_make_gaussian(sigma, size[1]).T)
 
     loop = range(n_unique_molecules)
     if progress:
         from tqdm.auto import tqdm
+
         loop = tqdm(loop)
 
-
-    mask = sp.coo_matrix(B.sum(axis=1).reshape(size) >  0)
+    mask = sp.coo_matrix(B.sum(axis=1).reshape(size) > 0)
 
     F = [
-       (GX @ F[:,i].reshape(size) @ GY).multiply(mask).reshape((-1,1)) for i in loop    
+        (GX @ F[:, i].reshape(size) @ GY).multiply(mask).reshape((-1, 1)) for i in loop
     ]
 
     F = sp.hstack(F).tocsr()
 
     # Find which molecule belong to what bin
     molecule2bin = (xy - xy.min(axis=0, keepdims=True)) // box_width
-    molecule2bin = molecule2bin.astype('int')
+    molecule2bin = molecule2bin.astype("int")
     molecule2bin = np.ravel_multi_index(tuple(x for x in molecule2bin.T), size)
 
     return F[molecule2bin].tocsr(), unique_labels
 
-def local_maxima(A:sp.spmatrix, attributes:np.ndarray):
 
+def local_maxima(A: sp.spmatrix, attributes: np.ndarray):
     # Convert to list of list
     L = A + sp.eye(A.shape[0])
     L = L.tolil()
-    
+
     largest_neighbor = [np.max(attributes[n]) for n in L.rows]
     maximas = set({})
     neighbors = [set(n) for n in L.rows]
@@ -405,7 +427,7 @@ def local_maxima(A:sp.spmatrix, attributes:np.ndarray):
     # Loop over each node
     visited = set({})
     for node in np.flip(np.argsort(attributes)):
-        if not node in visited:
+        if node not in visited:
             if attributes[node] >= largest_neighbor[node]:
                 maximas.add(node)
                 visited.update(neighbors[node])
@@ -423,7 +445,7 @@ def distance_filter(xy):
 
     # Find distance to 10th nearest neighbor
     distances, _ = KDTree(xy).query(xy, k=11)
-    distances = distances[:,-1].reshape((-1,1))
+    distances = distances[:, -1].reshape((-1, 1))
     mdl = BayesianGaussianMixture(n_components=2)
     mdl.fit(distances)
     means = mdl.means_
@@ -433,49 +455,30 @@ def distance_filter(xy):
     return fg_index
 
 
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     from sklearn.cluster import MiniBatchKMeans as KMeans
-
-
 
     import pandas as pd
     import numpy as np
-    df = pd.read_csv(r'C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei.csv')
 
-    xy = df[['x_location', 'y_location']].to_numpy()
-    labels = df['feature_name'].to_numpy()
-    A,_ = attribute_matrix(labels)
+    df = pd.read_csv(
+        r"C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei.csv"
+    )
+
+    xy = df[["x_location", "y_location"]].to_numpy()
+    labels = df["feature_name"].to_numpy()
+    A, _ = attribute_matrix(labels)
 
     F = kde_per_gene(xy, A, 5, box_width=1, progress=True)
     import pickle
-    pickle.dump(F, open('embedding.pkl', 'wb'))
+
+    pickle.dump(F, open("embedding.pkl", "wb"))
 
     c = KMeans(n_clusters=24).fit_predict(F)
     densities = kde(xy, sigma=5)
-    df['kde'] = densities
-    df.to_csv(r'C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei_kde.csv')
+    df["kde"] = densities
+    df.to_csv(
+        r"C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei_kde.csv"
+    )
 
     densities = kde(xy, sigma=5)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-tqdm
-numpy
 matplotlib
+numpy
 scipy
 seaborn
+tqdm

@@ -1,11 +1,12 @@
 import numpy as np
 import scipy.sparse as sp
 from scipy.spatial import cKDTree
-from typing import List, Tuple 
+from typing import List, Tuple
 from .linalg import spatial_binning_matrix, connectivity_matrix
 import random
 
-def knn_undirected_edges(xy:np.ndarray, k:int)->List[Tuple[int,int]]:
+
+def knn_undirected_edges(xy: np.ndarray, k: int) -> List[Tuple[int, int]]:
     """
     Computes the K-Nearest Neighbors (KNN) graph for a set of points in two dimensions.
 
@@ -24,10 +25,13 @@ def knn_undirected_edges(xy:np.ndarray, k:int)->List[Tuple[int,int]]:
     [(0, 1), (1, 2), (2, 3), (0, 2), (1, 3)]
     ```
     """
-    _, lil = cKDTree(xy).query(xy, k+1)
-    return list({(min(i,j),max(i,j)) for i,inds in enumerate(lil) for j in inds if i != j})
-    
-def radius_undirected_edges(xy:np.ndarray, r:float)->List[Tuple[int,int]]:
+    _, lil = cKDTree(xy).query(xy, k + 1)
+    return list(
+        {(min(i, j), max(i, j)) for i, inds in enumerate(lil) for j in inds if i != j}
+    )
+
+
+def radius_undirected_edges(xy: np.ndarray, r: float) -> List[Tuple[int, int]]:
     """
     Given a set of 2D points `xy`, compute a list of undirected edges where
     each edge is represented by a tuple `(i, j)` that connects the points with
@@ -49,20 +53,25 @@ def radius_undirected_edges(xy:np.ndarray, r:float)->List[Tuple[int,int]]:
         in reverse order.
     """
     lil = cKDTree(xy).query_ball_point(xy, r)
-    return list({(min(i,j),max(i,j)) for i,inds in enumerate(lil) for j in inds if i != j})
-    
+    return list(
+        {(min(i, j), max(i, j)) for i, inds in enumerate(lil) for j in inds if i != j}
+    )
+
+
 def _choose_one(data):
     if len(data):
-        return data[random.randint(0,len(data)-1)]
-    
+        return data[random.randint(0, len(data) - 1)]
+
+
 def _choose_k(data, k):
     if len(data):
-        return [data[random.randint(0,len(data)-1)] for _ in range(k)]
+        return [data[random.randint(0, len(data) - 1)] for _ in range(k)]
     return []
 
 
-
-def distant_undirected_edges(x:np.ndarray, k:int, r_min:float, r_max:float, bin_width:float=None):
+def distant_undirected_edges(
+    x: np.ndarray, k: int, r_min: float, r_max: float, bin_width: float = None
+):
     """
     Compute a list of distant undirected edges based on a set of points in 2D or 3D space.
 
@@ -85,7 +94,7 @@ def distant_undirected_edges(x:np.ndarray, k:int, r_min:float, r_max:float, bin_
         A list of undirected edges as tuples of point indices.
 
     """
-        
+
     if bin_width is None:
         bin_width = r_min / 3.0
 
@@ -104,33 +113,43 @@ def distant_undirected_edges(x:np.ndarray, k:int, r_min:float, r_max:float, bin_
 
     # Get neighboring bins
     neighboring_bins = connectivity_matrix(
-        bin_locations/bin_width, 
-        method='radius', 
-        r=r_max/bin_width, 
-        include_self=False
+        bin_locations / bin_width,
+        method="radius",
+        r=r_max / bin_width,
+        include_self=False,
     )
-    
+
     # Get size of each bins
     bin_matrix = bin_matrix.tolil()
     neighboring_bins = neighboring_bins.tolil()
 
     # Neighboring bins lut
     neighboring_bins_lut = neighboring_bins.rows.copy()
-    neighboring_bins_lut = {i : [j for j in n if np.linalg.norm(bin_locations[i]-bin_locations[j]) > r_min] for i,n in enumerate(neighboring_bins_lut)}
+    neighboring_bins_lut = {
+        i: [j for j in n if np.linalg.norm(bin_locations[i] - bin_locations[j]) > r_min]
+        for i, n in enumerate(neighboring_bins_lut)
+    }
 
     # Compute edges
     edges = [
-        (i, _choose_one(bin_matrix.rows[bin_id])) for i in range(npoints) for bin_id in _choose_k(neighboring_bins_lut[bin_ids[i]],  k) if len(neighboring_bins_lut[bin_ids[i]])
+        (i, _choose_one(bin_matrix.rows[bin_id]))
+        for i in range(npoints)
+        for bin_id in _choose_k(neighboring_bins_lut[bin_ids[i]], k)
+        if len(neighboring_bins_lut[bin_ids[i]])
     ]
 
     # Make undirected
-    edges = list(set([(min(e0,e1),max(e0,e1)) for (e0,e1) in edges]))
+    edges = list(set([(min(e0, e1), max(e0, e1)) for (e0, e1) in edges]))
     return edges
 
 
 class PairSampler:
-
-    def __init__(self, xy:np.ndarray, neighbor_max_distance:float, non_neighbor_distance_interval:Tuple[float,float]):
+    def __init__(
+        self,
+        xy: np.ndarray,
+        neighbor_max_distance: float,
+        non_neighbor_distance_interval: Tuple[float, float],
+    ):
         """
         Initializes the PairSampler object.
 
@@ -146,9 +165,13 @@ class PairSampler:
 
         self.r_min = non_neighbor_distance_interval[0]
         # Find positive neighbors
-        self._positive_neighbors = cKDTree(xy).query_ball_point(xy, neighbor_max_distance)
+        self._positive_neighbors = cKDTree(xy).query_ball_point(
+            xy, neighbor_max_distance
+        )
         # No self loops
-        self._positive_neighbors = [[j for j in n if i != j] for i,n in enumerate(self._positive_neighbors)]
+        self._positive_neighbors = [
+            [j for j in n if i != j] for i, n in enumerate(self._positive_neighbors)
+        ]
         self.xy = xy
         # Bin data
         bin_width = non_neighbor_distance_interval[0] / 3.0
@@ -165,11 +188,15 @@ class PairSampler:
         bin_locations = (bin_matrix @ xy) / bin_matrix.sum(axis=1)
         bin_locations = bin_locations.A
 
-        self._neighboring_bins = cKDTree(bin_locations/bin_width).query_ball_point(bin_locations/bin_width, non_neighbor_distance_interval[1]/bin_width)
-        p = np.array([i for i,n in enumerate(self._neighboring_bins) for _ in n])
-        q = np.array([j for i,n in enumerate(self._neighboring_bins) for j in n])
-        dist = np.linalg.norm(bin_locations[p]-bin_locations[q],axis=1)
-        adj = sp.csr_matrix((dist,(p,q)), shape=(len(bin_locations), len(bin_locations)))
+        self._neighboring_bins = cKDTree(bin_locations / bin_width).query_ball_point(
+            bin_locations / bin_width, non_neighbor_distance_interval[1] / bin_width
+        )
+        p = np.array([i for i, n in enumerate(self._neighboring_bins) for _ in n])
+        q = np.array([j for i, n in enumerate(self._neighboring_bins) for j in n])
+        dist = np.linalg.norm(bin_locations[p] - bin_locations[q], axis=1)
+        adj = sp.csr_matrix(
+            (dist, (p, q)), shape=(len(bin_locations), len(bin_locations))
+        )
         adj = adj > non_neighbor_distance_interval[0]
         self._neighboring_bins = adj.tolil().rows
         self._bin_matrix = bin_matrix.tolil().rows
@@ -179,7 +206,7 @@ class PairSampler:
         self._counter = 0
         random.shuffle(self._queue)
 
-    def sample(self, neighbor:bool) -> Tuple[int,int]:
+    def sample(self, neighbor: bool) -> Tuple[int, int]:
         """
         Sample a pair of points from the provided data array.
 
@@ -201,7 +228,7 @@ class PairSampler:
                 p1 = self._pick_point()
                 if len(self._positive_neighbors[p1]):
                     p2 = _choose_one(self._positive_neighbors[p1])
-                    return p1,p2
+                    return p1, p2
         else:
             while True:
                 p1 = self._pick_point()
@@ -220,6 +247,3 @@ class PairSampler:
         output = self._queue[self._counter]
         self._counter += 1
         return output
-
-    
-    

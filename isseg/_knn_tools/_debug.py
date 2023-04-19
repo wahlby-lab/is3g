@@ -1,7 +1,4 @@
-
-
 from scipy.sparse import spmatrix
-import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -9,12 +6,12 @@ import random
 random.seed(32)
 np.random.seed(32)
 colors = [
-    "#FFFF00", # Yellow
-    "#1CE6FF", # Cyan
-    "#FF34FF", # Magenta
-    "#FF4A46", # Red
-    "#008941", # Green
-    "#006FA6", # Blue
+    "#FFFF00",  # Yellow
+    "#1CE6FF",  # Cyan
+    "#FF34FF",  # Magenta
+    "#FF4A46",  # Red
+    "#008941",  # Green
+    "#006FA6",  # Blue
     "#A30059",
     "#FFDBE5",
     "#7A4900",
@@ -111,12 +108,12 @@ colors = [
     "#CB7E98",
     "#A4E804",
     "#324E72",
-      "#FFFF00", # Yellow
-    "#1CE6FF", # Cyan
-    "#FF34FF", # Magenta
-    "#FF4A46", # Red
-    "#008941", # Green
-    "#006FA6", # Blue
+    "#FFFF00",  # Yellow
+    "#1CE6FF",  # Cyan
+    "#FF34FF",  # Magenta
+    "#FF4A46",  # Red
+    "#008941",  # Green
+    "#006FA6",  # Blue
     "#A30059",
     "#FFDBE5",
     "#7A4900",
@@ -213,12 +210,12 @@ colors = [
     "#CB7E98",
     "#A4E804",
     "#324E72",
-      "#FFFF00", # Yellow
-    "#1CE6FF", # Cyan
-    "#FF34FF", # Magenta
-    "#FF4A46", # Red
-    "#008941", # Green
-    "#006FA6", # Blue
+    "#FFFF00",  # Yellow
+    "#1CE6FF",  # Cyan
+    "#FF34FF",  # Magenta
+    "#FF4A46",  # Red
+    "#008941",  # Green
+    "#006FA6",  # Blue
     "#A30059",
     "#FFDBE5",
     "#7A4900",
@@ -320,24 +317,25 @@ colors = [
 
 def random_color():
     return [np.random.rand() for _ in range(3)]
-    
+
+
 def plot_data(xy, edges=None, labels=None, ax=None):
     if labels is not None:
         unique_labels = np.unique(labels)
         if len(unique_labels) < len(colors):
-            label2color = {l : colors[i] for i,l in enumerate(unique_labels)}
-            label2color = {l : random_color() for i,l in enumerate(unique_labels)}
+            label2color = {l: colors[i] for i, l in enumerate(unique_labels)}
+            label2color = {l: random_color() for i, l in enumerate(unique_labels)}
 
         else:
-            label2color = {l : random_color() for i,l in enumerate(unique_labels)}
+            label2color = {l: random_color() for i, l in enumerate(unique_labels)}
 
     if ax is None:
         ax = plt
     if edges is not None:
-        if isinstance(edges,spmatrix):
+        if isinstance(edges, spmatrix):
             edge_dict = dict(edges.todok().items())
         elif isinstance(edges, list):
-            edge_dict = {e : 1.0 for e in edges}
+            edge_dict = {e: 1.0 for e in edges}
         elif isinstance(edges, dict):
             edge_dict = edges
     # Extract x and y coordinates for each position
@@ -347,16 +345,19 @@ def plot_data(xy, edges=None, labels=None, ax=None):
     if labels is not None:
         label_color = [label2color[l] for l in labels]
     else:
-        label_color = 'blue'
-    ax.scatter(x, y, c=label_color[0:len(x)])
+        label_color = "blue"
+    ax.scatter(x, y, c=label_color[0 : len(x)])
     for i in range(len(x)):
-        ax.text(x[i],y[i],str(i))
+        ax.text(x[i], y[i], str(i))
     # Add the edges
     if edges is not None:
         for (i, j), w in edge_dict.items():
             if (i < len(xy)) and (j < len(xy)):
-                c = 'g' if w > 0 else 'r'
-                ax.plot([x[i], x[j]], [y[i], y[j]], f'{c}-', linewidth=np.minimum(np.abs(w),1)*2, alpha=0.5)
-
-
-
+                c = "g" if w > 0 else "r"
+                ax.plot(
+                    [x[i], x[j]],
+                    [y[i], y[j]],
+                    f"{c}-",
+                    linewidth=np.minimum(np.abs(w), 1) * 2,
+                    alpha=0.5,
+                )
