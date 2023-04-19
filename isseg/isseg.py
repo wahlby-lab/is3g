@@ -1,12 +1,9 @@
 # Standard library imports
-import os
 import random
 from typing import Tuple, Union, Dict, Sequence
 
 # Third-party imports
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -70,7 +67,7 @@ class PairDataset(Dataset):
 
     def _fill_buffer(self):
         labels = np.random.randint(0, 2, size=10000)
-        pq = np.array([self.sampler.sample(l == 1) for l in labels]).T
+        pq = np.array([self.sampler.sample(_label == 1) for _label in labels]).T
         t1, t2 = self.features[pq[0], :].A, self.features[pq[1], :].A
         t1 = torch.from_numpy(t1).float()
         t2 = torch.from_numpy(t2).float()
@@ -137,7 +134,7 @@ class SiameseNet(nn.Module):
         return self.score_edge(x, y, device, attractive)
 
 
-def istseg(
+def isseg(
     xy: np.ndarray,
     labels: np.ndarray,
     cell_diameter: float,
@@ -367,129 +364,9 @@ def _cluster(xy, labels, cell_diameter, ignore_in_kde):
         signed_edges[edge] = long_edges_scores[i]
 
     label_map, active_set = mutex_watershed(signed_edges)
-    clusters = [label_map[l] if l in label_map else -1 for l in range(len(labels))]
+    clusters = [
+        label_map[_label] if _label in label_map else -1
+        for _label in range(len(labels))
+    ]
 
     return clusters, signed_edges, active_set
-
-
-if __name__ == "__main__":
-    experiment = "ISS"
-    if experiment == "simulated":
-        from _knn_tools._debug import plot_data
-
-        # Load the data
-        data = pd.read_csv(os.path.join("datasets", "simulated", "data.csv"))
-
-        # Parse into numpy land
-        xy = data[["x", "y"]].to_numpy()
-        labels = data["gene"].to_numpy().astype("int")
-
-        # Run the clustering
-        clusters, signed_edges, active_set = istseg(xy, labels, cell_diameter=50.0)
-
-        # Plot the results
-        fig, axs = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True)
-        plot_data(xy, labels=labels, edges=active_set, ax=axs[0])
-        plot_data(xy, labels=clusters, ax=axs[1])
-
-        plt.show()
-
-    elif experiment == "christophe":
-        for cell_diameter in [35, 45, 55, 65]:
-            # Load the data
-            data = pd.read_csv(os.path.join("datasets", "christophe", "data.csv"))
-
-            # Parse into numpy land
-            xy = data[["x_location", "y_location"]].to_numpy()
-            labels = data["feature_name"].to_numpy()
-
-            # Run the clustering
-            clusters, signed_edges = istseg(xy, labels, cell_diameter=cell_diameter)
-
-            # Add to results
-            data["instances"] = clusters
-            data.to_csv(
-                os.path.join("datasets", "christophe", f"result_{cell_diameter}.csv")
-            )
-
-    elif experiment == "osmFISH":
-        for cell_diameter in [100]:
-            # Load the data
-            data = pd.read_csv(
-                os.path.join("datasets", "osmFISH", "osmFISH_cropped.csv")
-            )
-
-            # Parse into numpy land
-            xy = data[["X", "Y"]].to_numpy()
-            labels = data["Genes"].to_numpy()
-            numeric_map = {u: i for i, u in enumerate(np.unique(labels))}
-            numeric_labels = np.array([numeric_map[l] for l in labels])
-
-            # Run the clustering
-            clusters, signed_edges, active_set = istseg(
-                xy,
-                labels,
-                cell_diameter=cell_diameter,
-                labels_to_ignore_in_kde=["cell_center"],
-            )
-
-            # Add to results
-            data["instances"] = clusters
-            data.to_csv(
-                os.path.join(
-                    "datasets", "osmFISH", f"osmFISH_cropped_result{cell_diameter}.csv"
-                )
-            )
-    elif experiment == "osmFISH-full":
-        for cell_diameter in [75, 100, 125, 150, 175]:
-            # Load the data
-            data = pd.read_csv(
-                os.path.join("datasets", "osmFISH", "osmFISH_all_data+methods.csv")
-            )
-
-            # Parse into numpy land
-            xy = data[["X", "Y"]].to_numpy()
-            labels = data["Genes"].to_numpy()
-            numeric_map = {u: i for i, u in enumerate(np.unique(labels))}
-            numeric_labels = np.array([numeric_map[l] for l in labels])
-
-            # Run the clustering
-            clusters, signed_edges, active_set = istseg(
-                xy,
-                labels,
-                cell_diameter=cell_diameter,
-                labels_to_ignore_in_kde=["cell_center"],
-            )
-
-            # Add to results
-            data["instances"] = clusters
-            data.to_csv(
-                os.path.join(
-                    "datasets",
-                    "osmFISH",
-                    "results",
-                    f"osmFISH_full_result{cell_diameter}.csv",
-                )
-            )
-
-    elif experiment == "ISS":
-        for cell_diameter in [30, 50, 70, 90]:
-            data = pd.read_csv(os.path.join("datasets", "iss", "ISS_all_cmaps.csv"))
-            # Parse into numpy land
-            xy = data[["X", "Y"]].to_numpy()
-            labels = data["Genes"].to_numpy()
-            # Run the clustering
-            clusters, signed_edges, active_set = istseg(
-                xy,
-                labels,
-                cell_diameter=cell_diameter,
-                labels_to_ignore_in_kde=["cell_center"],
-            )
-
-            # Add to results
-            data["instances"] = clusters
-            data.to_csv(
-                os.path.join(
-                    "datasets", "iss", "results", f"iss_full_result{cell_diameter}.csv"
-                )
-            )
