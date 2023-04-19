@@ -323,11 +323,15 @@ def plot_data(xy, edges=None, labels=None, ax=None):
     if labels is not None:
         unique_labels = np.unique(labels)
         if len(unique_labels) < len(colors):
-            label2color = {l: colors[i] for i, l in enumerate(unique_labels)}
-            label2color = {l: random_color() for i, l in enumerate(unique_labels)}
+            label2color = {_label: colors[i] for i, _label in enumerate(unique_labels)}
+            label2color = {
+                _label: random_color() for i, _label in enumerate(unique_labels)
+            }
 
         else:
-            label2color = {l: random_color() for i, l in enumerate(unique_labels)}
+            label2color = {
+                _label: random_color() for i, _label in enumerate(unique_labels)
+            }
 
     if ax is None:
         ax = plt
@@ -343,7 +347,7 @@ def plot_data(xy, edges=None, labels=None, ax=None):
     y = [p[1] for p in xy]
     # Plot the points
     if labels is not None:
-        label_color = [label2color[l] for l in labels]
+        label_color = [label2color[_label] for _label in labels]
     else:
         label_color = "blue"
     ax.scatter(x, y, c=label_color[0 : len(x)])

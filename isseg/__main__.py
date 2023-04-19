@@ -2,6 +2,7 @@ from isseg.isseg import isseg
 import click
 import pandas as pd
 
+
 @click.command()
 @click.argument("csv_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("--x", type=str, default="x")

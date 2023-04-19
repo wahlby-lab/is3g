@@ -2,13 +2,14 @@ import numpy as np
 import scipy.sparse as sp
 from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 from sklearn.preprocessing import OneHotEncoder
+from typing import Optional
 
 
 def connectivity_matrix(
     xy: np.ndarray,
     method="knn",
     k: int = 5,
-    r: float = None,
+    r: Optional[float] = None,
     include_self: bool = False,
 ) -> sp.spmatrix:
     """
@@ -137,9 +138,9 @@ def proximity_matrix(A: sp.spmatrix, gamma: float = 1.0, hops: int = 1) -> sp.sp
         The proximity matrix of the input matrix.
     """
     L, D = _adj2laplacian(A, return_degree=True)
-    I = sp.eye(*D.shape)
+    _I = sp.eye(*D.shape)
     D_inv = sp.csr_matrix(sp.diags(1.0 / (D.diagonal() + 1e-12), 0))
-    P = (I - gamma * D_inv @ L) ** hops
+    P = (_I - gamma * D_inv @ L) ** hops
     return P
 
 
@@ -453,32 +454,3 @@ def distance_filter(xy):
     labels = mdl.predict(distances)
     fg_index = np.where(labels == fg_label)[0]
     return fg_index
-
-
-if __name__ == "__main__":
-    from sklearn.cluster import MiniBatchKMeans as KMeans
-
-    import pandas as pd
-    import numpy as np
-
-    df = pd.read_csv(
-        r"C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei.csv"
-    )
-
-    xy = df[["x_location", "y_location"]].to_numpy()
-    labels = df["feature_name"].to_numpy()
-    A, _ = attribute_matrix(labels)
-
-    F = kde_per_gene(xy, A, 5, box_width=1, progress=True)
-    import pickle
-
-    pickle.dump(F, open("embedding.pkl", "wb"))
-
-    c = KMeans(n_clusters=24).fit_predict(F)
-    densities = kde(xy, sigma=5)
-    df["kde"] = densities
-    df.to_csv(
-        r"C:\Users\Axel\Documents\GitHub\omics\example_data\xenium_andrea\markers_with_nuclei_kde.csv"
-    )
-
-    densities = kde(xy, sigma=5)
