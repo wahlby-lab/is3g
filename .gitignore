@@ -1,5 +1,5 @@
-# Temp file from isseg
 best-model.pt
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
