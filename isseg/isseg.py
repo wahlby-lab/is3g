@@ -15,9 +15,9 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm.auto import tqdm
 
 # Local imports
-from _knn_tools.mutshed import mutshed
-from _knn_tools.edges import distant_undirected_edges, knn_undirected_edges, PairSampler
-from _knn_tools.linalg import kde_per_label
+from ._knn_tools.mutshed import mutshed
+from ._knn_tools.edges import distant_undirected_edges, knn_undirected_edges, PairSampler
+from ._knn_tools.linalg import kde_per_label
 
 
 def _chunker(seq, size=500000):
