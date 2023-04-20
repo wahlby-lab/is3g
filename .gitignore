@@ -35,3 +35,6 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Temp file from isseg
+best-model.pt
