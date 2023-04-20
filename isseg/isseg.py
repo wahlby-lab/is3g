@@ -218,7 +218,6 @@ def isseg(
     radius: float,
     remove_background: bool = True,
     labels_to_ignore_in_kde: Sequence = None,
-    return_edges: bool = False,
 ) -> Union[
     np.ndarray,
     Tuple[np.ndarray, Dict[Tuple[int, int], float], Dict[Tuple[int, int], float]],
@@ -241,23 +240,12 @@ def isseg(
 
     cluster_labels = np.ones(len(xy), dtype="int") * -1
     xy_filt, labels_filt = xy[ind], labels[ind]
-    if return_edges:
-        cluster, signed_edges = _cluster(
-            xy_filt, labels_filt, cell_diameter, labels_to_ignore_in_kde
-        )
-        cluster_labels[ind] = cluster
-        signed_edges = {(ind[e0], ind[e1]): w for (e0, e1), w in signed_edges.items()}
-        active_set = {(ind[e0], ind[e1]): w for (e0, e1), w in active_set.items()}
-        cluster_labels = cluster_labels + 1
-        return cluster_labels, signed_edges, active_set
-
-    else:
-        cluster, _ = _cluster(
-            xy_filt, labels_filt, cell_diameter, labels_to_ignore_in_kde
-        )
-        cluster_labels[ind] = cluster
-        cluster_labels = cluster_labels + 1
-        return cluster_labels
+    cluster = _cluster(
+        xy_filt, labels_filt, cell_diameter, labels_to_ignore_in_kde
+    )
+    cluster_labels[ind] = cluster
+    cluster_labels = cluster_labels + 1
+    return cluster_labels
 
 
 def _cluster(xy, labels, cell_diameter, ignore_in_kde):
@@ -408,4 +396,4 @@ def _cluster(xy, labels, cell_diameter, ignore_in_kde):
     label_map = mutshed(signed_edges)
     clusters = [label_map[l] if l in label_map else -1 for l in range(len(labels))]
 
-    return clusters, signed_edges
+    return clusters
