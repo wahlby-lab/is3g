@@ -1,6 +1,7 @@
-from isseg.isseg import isseg
 import click
 import pandas as pd
+
+from isseg.isseg import isseg
 
 
 @click.command()

@@ -1,23 +1,28 @@
 # Standard library imports
 import random
-from typing import Tuple, Union, Dict, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 # Third-party imports
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import scipy.sparse as sp
 from scipy.spatial import cKDTree as KDTree
 from sklearn.mixture import BayesianGaussianMixture
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
+
+from ._knn_tools.edges import (
+    PairSampler,
+    distant_undirected_edges,
+    knn_undirected_edges,
+)
+from ._knn_tools.linalg import kde_per_label
 
 # Local imports
 from ._knn_tools.mutshed import mutshed
-from ._knn_tools.edges import distant_undirected_edges, knn_undirected_edges, PairSampler
-from ._knn_tools.linalg import kde_per_label
 
 
 def _chunker(seq, size=500000):
@@ -51,7 +56,7 @@ class PairDataset(Dataset):
             xy, neighbor_max_distance, non_neighbor_max_distance_interval
         )
         self.xy = xy
-        self.buffer = []
+        self.buffer: List[Any] = []
         self._counter = np.inf
 
     def __len__(self):
@@ -59,7 +64,7 @@ class PairDataset(Dataset):
 
     def _fill_buffer(self):
         labels = np.random.randint(0, 2, size=10000)
-        pq = np.array([self.sampler.sample(l == 1) for l in labels]).T
+        pq = np.array([self.sampler.sample(label == 1) for label in labels]).T
         t1, t2 = self.features[pq[0], :].A, self.features[pq[1], :].A
         t1 = torch.from_numpy(t1).float()
         t2 = torch.from_numpy(t2).float()
@@ -147,7 +152,8 @@ class SiameseNet(nn.Module):
 
     def score_edge(self, x: torch.tensor, y: torch.tensor, attractive: bool = True):
         """
-        Computes the score of an edge between two nodes x and y based on the output of the Siamese network.
+        Computes the score of an edge between two nodes x and y based on the output of
+        the Siamese network.
 
         Parameters:
         -----------
@@ -158,13 +164,16 @@ class SiameseNet(nn.Module):
         device : str, optional (default='cpu')
             The device on which to run the computation.
         attractive : bool, optional (default=True)
-            If True, returns the attractive force score (i.e., higher score means the nodes are more likely to be in the same cluster).
-            If False, returns the repulsive force score (i.e., higher score means the nodes are less likely to be in the same cluster).
+            If True, returns the attractive force score (i.e., higher score means the
+                nodes are more likely to be in the same cluster).
+            If False, returns the repulsive force score (i.e., higher score means the
+                nodes are less likely to be in the same cluster).
 
         Returns:
         --------
         score : Union[float, np.ndarray]
-            The score of the edge between x and y. If batch_size=1, returns a float. Otherwise, returns a np.ndarray of shape (batch_size,).
+            The score of the edge between x and y. If batch_size=1, returns a float.
+            Otherwise, returns a np.ndarray of shape (batch_size,).
         """
         z = self.forward(x, y)
         z = torch.sigmoid(z)
@@ -186,7 +195,8 @@ class SiameseNet(nn.Module):
         attractive: bool = True,
     ):
         """
-        Computes the score (attractive or repulsive force) for the edge connecting the vectors x and y.
+        Computes the score (attractive or repulsive force) for the edge connecting the
+        vectors x and y.
 
         Parameters:
         -----------
@@ -202,7 +212,8 @@ class SiameseNet(nn.Module):
         Returns:
         --------
         score : float or np.ndarray
-            The computed score (attractive or repulsive force) for the edge connecting x and y.
+            The computed score (attractive or repulsive force) for the edge connecting x
+            and y.
         """
         x, y = torch.tensor(x.A).float().to(device), torch.tensor(y.A).float().to(
             device
@@ -217,7 +228,7 @@ def isseg(
     label: str,
     radius: float,
     remove_background: bool = True,
-    labels_to_ignore_in_kde: Sequence = None,
+    labels_to_ignore_in_kde: Optional[Sequence] = None,
 ) -> Union[
     np.ndarray,
     Tuple[np.ndarray, Dict[Tuple[int, int], float], Dict[Tuple[int, int], float]],
@@ -240,9 +251,7 @@ def isseg(
 
     cluster_labels = np.ones(len(xy), dtype="int") * -1
     xy_filt, labels_filt = xy[ind], labels[ind]
-    cluster = _cluster(
-        xy_filt, labels_filt, cell_diameter, labels_to_ignore_in_kde
-    )
+    cluster = _cluster(xy_filt, labels_filt, cell_diameter, labels_to_ignore_in_kde)
     cluster_labels[ind] = cluster
     cluster_labels = cluster_labels + 1
     return cluster_labels
@@ -394,6 +403,6 @@ def _cluster(xy, labels, cell_diameter, ignore_in_kde):
         signed_edges[edge] = long_edges_scores[i]
 
     label_map = mutshed(signed_edges)
-    clusters = [label_map[l] if l in label_map else -1 for l in range(len(labels))]
+    clusters = [label_map[i] if i in label_map else -1 for i in range(len(labels))]
 
     return clusters

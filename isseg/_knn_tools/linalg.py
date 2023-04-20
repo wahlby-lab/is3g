@@ -1,8 +1,9 @@
+from typing import Any, List, Literal, Optional, Union
+
 import numpy as np
 import scipy.sparse as sp
 from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 from sklearn.preprocessing import OneHotEncoder
-from typing import Optional
 
 
 def connectivity_matrix(
@@ -32,7 +33,8 @@ def connectivity_matrix(
     Returns
     -------
     A : sp.spmatrix
-        The connectivity matrix, with ones in the positions where two points are connected.
+        The connectivity matrix, with ones in the positions where two points are
+            connected.
     """
     if method == "knn":
         A = kneighbors_graph(xy, k, include_self=include_self)
@@ -42,7 +44,9 @@ def connectivity_matrix(
 
 
 def attribute_matrix(
-    cat: np.ndarray, unique_cat: np.ndarray = "auto", return_encoder: bool = False
+    cat: np.ndarray,
+    unique_cat: Union[np.ndarray, Literal["auto"]] = "auto",
+    return_encoder: bool = False,
 ):
     """
     Compute the attribute matrix from categorical data, based on one-hot encoding.
@@ -52,10 +56,11 @@ def attribute_matrix(
     cat : np.ndarray
         The categorical data, where each row is a sample and each column is a feature.
     unique_cat : np.ndarray
-        Unique categorical data used to setup up the encoder. If "auto", unique categories
-        are automatically determined from cat.
+        Unique categorical data used to setup up the encoder. If "auto", unique
+        categories are automatically determined from cat.
     return_encoder : bool, optional (default=False)
-        Whether to return the encoder object, in addition to the attribute matrix and categories list.
+        Whether to return the encoder object, in addition to the attribute matrix and
+        categories list.
 
     Returns
     -------
@@ -67,12 +72,15 @@ def attribute_matrix(
         The encoder object, only returned if `return_encoder` is True.
     """
     X = np.array(cat).reshape((-1, 1))
-    if not isinstance(unique_cat, str):
-        unique_cat = [np.array(unique_cat)]
+    if unique_cat == "auto":
+        unique_cat_list: Union[List[np.ndarray], Literal["auto"]] = "auto"
+    elif not isinstance(unique_cat, str):
+        unique_cat_list = [np.array(unique_cat)]
     else:
-        if unique_cat != "auto":
-            raise ValueError("`unique_cat` must be a numpy array or the string `auto`.")
-    encoder = OneHotEncoder(categories=unique_cat, sparse=True, handle_unknown="ignore")
+        raise ValueError("`unique_cat` must be a numpy array or the string `auto`.")
+    encoder = OneHotEncoder(
+        categories=unique_cat_list, sparse_output=True, handle_unknown="ignore"
+    )
     encoder.fit(X)
     y = encoder.transform(X)
     categories = list(encoder.categories_[0])
@@ -108,13 +116,15 @@ def _adj2laplacian(A: sp.spmatrix, return_degree: bool = False) -> sp.spmatrix:
     A : sp.spmatrix
         The input affinity matrix.
     return_degree : bool, optional
-        If True, returns both the Laplacian matrix and the degree matrix. Default is False.
+        If True, returns both the Laplacian matrix and the degree matrix. Default is
+        False.
 
     Returns:
     --------
     sp.spmatrix or tuple
         If `return_degree` is False, returns the Laplacian matrix.
-        If `return_degree` is True, returns a tuple containing the Laplacian matrix and the degree matrix.
+        If `return_degree` is True, returns a tuple containing the Laplacian matrix and
+        the degree matrix.
     """
     aff_tilde = A + sp.eye(*A.shape)
     D = degree_matrix(aff_tilde)
@@ -179,15 +189,17 @@ def proximity_matrix_multiply(
 
 def maximal_degree_matrix(A: sp.spmatrix) -> sp.spmatrix:
     """
-    Given an adjacency matrix A, returns a binary matrix representing a maximal independent set of the graph described by A.
-    A maximal independent set is a set of vertices such that no two vertices are connected by an edge, and it is not possible
+    Given an adjacency matrix A, returns a binary matrix representing a maximal
+    independent set of the graph described by A. A maximal independent set is a set of
+    vertices such that no two vertices are connected by an edge, and it is not possible
     to add any vertices to the set.
 
     Parameters:
     A (sp.spmatrix): The input adjacency matrix.
 
     Returns:
-    sp.spmatrix: A binary matrix representing a maximal independent set of the graph described by A.
+    sp.spmatrix: A binary matrix representing a maximal independent set of the graph
+        described by A.
 
     """
     # Sort vertices based on degree
@@ -213,15 +225,19 @@ def spatial_binning_matrix(
     xy: np.ndarray, box_width: float, return_size: bool = False
 ) -> sp.spmatrix:
     """
-    Compute a sparse matrix that indicates which points in a point cloud fall in which hyper-rectangular bins.
+    Compute a sparse matrix that indicates which points in a point cloud fall in which
+    hyper-rectangular bins.
 
     Parameters:
-    points (numpy.ndarray): An array of shape (N, D) containing the D-dimensional coordinates of N points in the point cloud.
+    points (numpy.ndarray): An array of shape (N, D) containing the D-dimensional
+        coordinates of N points in the point cloud.
     box_width (float): The width of the bins in which to group the points.
     return_size (bool): Wether the sie of the grid should be returned. Default False.
 
     Returns:
-    sp.spmatrix: A sparse matrix of shape (num_bins, N) where num_bins is the number of bins. The matrix is such that the entry (i,j) is 1 if the j-th point falls in the i-th bin, and 0 otherwise.
+    sp.spmatrix: A sparse matrix of shape (num_bins, N) where num_bins is the number of
+        bins. The matrix is such that the entry (i,j) is 1 if the j-th point falls in
+        the i-th bin, and 0 otherwise.
 
     Example:
     >>> points = np.array([[0, 0, 0], [0.5, 0.5, 0.5], [1.5, 1.5, 1.5], [2, 2, 2]])
@@ -289,8 +305,8 @@ def kde(xy: np.ndarray, sigma: float, box_width: float = 1) -> np.ndarray:
     each with side length `box_width`. The number of input points falling into each bin
     is counted, and the counts are used to create an image of the density function.
     The image is then smoothed using a Gaussian kernel with standard deviation `sigma`.
-    Finally, the density estimate for each input point is obtained by looking up the value
-    of the density image at the bin containing that point.
+    Finally, the density estimate for each input point is obtained by looking up the
+    value of the density image at the bin containing that point.
     """
     from scipy.ndimage import gaussian_filter
 
@@ -323,13 +339,15 @@ def _make_gaussian(sigma, shape):
 
 def kde_per_label(xy: np.ndarray, labels: np.ndarray, sigma: float):
     """
-    Computes the kernel density estimation (KDE) for each label in `labels`, using the data points in `xy` as inputs.
-    Returns the KDE values as an attribute matrix, and the unique labels found in `labels`.
+    Computes the kernel density estimation (KDE) for each label in `labels`, using the
+    data points in `xy` as inputs. Returns the KDE values as an attribute matrix, and
+    the unique labels found in `labels`.
 
     Parameters:
     -----------
     xy : numpy.ndarray
-        A 2D numpy array of shape (n, 2) containing the x-y coordinates of the data points.
+        A 2D numpy array of shape (n, 2) containing the x-y coordinates of the data
+        points.
     labels : numpy.ndarray
         A 1D numpy array of length n containing the label for each data point.
     sigma : float
@@ -338,10 +356,12 @@ def kde_per_label(xy: np.ndarray, labels: np.ndarray, sigma: float):
     Returns:
     --------
     Tuple of two numpy.ndarray:
-        - `att`: A 2D numpy array of shape (n_labels, n_features), where n_labels is the number of unique labels in `labels`
-                  and n_features is the number of attributes (columns) in `labels`. Each row represents the KDE values
-                  for a single label.
-        - `unique_labels`: A 1D numpy array containing the unique labels found in `labels`.
+        - `att`: A 2D numpy array of shape (n_labels, n_features), where n_labels is the
+            number of unique labels in `labels`
+                  and n_features is the number of attributes (columns) in `labels`. Each
+                  row represents the KDE values for a single label.
+        - `unique_labels`: A 1D numpy array containing the unique labels found in
+            `labels`.
     """
     att, unqiue_labels = attribute_matrix(labels)
     adj = connectivity_matrix(xy, method="radius", r=3.0 * sigma)
@@ -363,18 +383,23 @@ def __kde_per_label(
     """
     OLD
 
-    Computes a kernel density estimate (KDE) for each gene in a given attribute matrix based on the spatial locations of the
-    molecules in the xy array. Uses a Gaussian filter with standard deviation sigma and a spatial binning box width of box_width.
+    Computes a kernel density estimate (KDE) for each gene in a given attribute matrix
+    based on the spatial locations of the molecules in the xy array. Uses a Gaussian
+    filter with standard deviation sigma and a spatial binning box width of box_width.
 
     Args:
-        xy (np.ndarray): An N x 2 array representing the spatial locations of N molecules.
+        xy (np.ndarray): An N x 2 array representing the spatial locations of N
+            molecules.
         labels (np.ndarray): Categorical labels of each molecule
         sigma (float): The standard deviation of the Gaussian filter used for smoothing.
-        box_width (float, optional): The width of the spatial bins used for binning the molecules. Defaults to 1.0.
-        progress (bool, optional): Whether to display a progress bar during computation. Defaults to False.
+        box_width (float, optional): The width of the spatial bins used for binning the
+            molecules. Defaults to 1.0.
+        progress (bool, optional): Whether to display a progress bar during computation.
+            Defaults to False.
 
     Returns:
-        sp.spmatrix: An M x S sparse matrix representing the KDE for each gene, where S is the total number of spatial bins.
+        sp.spmatrix: An M x S sparse matrix representing the KDE for each gene, where S
+            is the total number of spatial bins.
         unique_labels: List of labels indicating the label of each feature dimension.
     """
 
@@ -397,7 +422,7 @@ def __kde_per_label(
     GX = sp.csr_matrix(_make_gaussian(sigma, size[0]))
     GY = sp.csr_matrix(_make_gaussian(sigma, size[1]).T)
 
-    loop = range(n_unique_molecules)
+    loop: Any = range(n_unique_molecules)
     if progress:
         from tqdm.auto import tqdm
 
@@ -437,10 +462,10 @@ def local_maxima(A: sp.spmatrix, attributes: np.ndarray):
                 visited.update(neighbors[node])
             visited.add(node)
 
-    maximas = np.array(list(maximas))
-    maximas_values = attributes[maximas]
-    maximas = maximas[np.flip(np.argsort(maximas_values))]
-    return maximas
+    maximas_arr = np.array(list(maximas))
+    maximas_values = attributes[maximas_arr]
+    maximas_arr = maximas_arr[np.flip(np.argsort(maximas_values))]
+    return maximas_arr
 
 
 def distance_filter(xy):
