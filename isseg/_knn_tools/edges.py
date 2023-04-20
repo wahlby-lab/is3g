@@ -1,9 +1,11 @@
+import random
+from typing import List, Optional, Tuple
+
 import numpy as np
 import scipy.sparse as sp
 from scipy.spatial import cKDTree
-from typing import List, Tuple
-from .linalg import spatial_binning_matrix, connectivity_matrix
-import random
+
+from .linalg import connectivity_matrix, spatial_binning_matrix
 
 
 def knn_undirected_edges(xy: np.ndarray, k: int) -> List[Tuple[int, int]]:
@@ -11,12 +13,13 @@ def knn_undirected_edges(xy: np.ndarray, k: int) -> List[Tuple[int, int]]:
     Computes the K-Nearest Neighbors (KNN) graph for a set of points in two dimensions.
 
     Args:
-    - xy (np.ndarray): A two-dimensional numpy array of shape (N, 2) representing the N points.
+    - xy (np.ndarray): A two-dimensional numpy array of shape (N, 2) representing the N
+      points.
     - k (int): The number of nearest neighbors to consider.
 
     Returns:
-    - A list of tuples representing the edges of the KNN graph. Each tuple contains two integers
-      representing the indices of the two points that form an edge.
+    - A list of tuples representing the edges of the KNN graph. Each tuple contains two
+      integers representing the indices of the two points that form an edge.
 
     Example:
     ```
@@ -70,10 +73,11 @@ def _choose_k(data, k):
 
 
 def distant_undirected_edges(
-    x: np.ndarray, k: int, r_min: float, r_max: float, bin_width: float = None
+    x: np.ndarray, k: int, r_min: float, r_max: float, bin_width: Optional[float] = None
 ):
     """
-    Compute a list of distant undirected edges based on a set of points in 2D or 3D space.
+    Compute a list of distant undirected edges based on a set of points in 2D or 3D
+    space.
 
     Parameters
     ----------
@@ -86,7 +90,8 @@ def distant_undirected_edges(
     r_max : float
         The maximum distance between two points for an edge to be considered.
     bin_width : float or None, optional
-        The bin width to use for spatial binning. If None, a default value of r_min / 3.0 is used.
+        The bin width to use for spatial binning. If None, a default value of
+        r_min / 3.0 is used.
 
     Returns
     -------
@@ -154,9 +159,12 @@ class PairSampler:
         Initializes the PairSampler object.
 
         Args:
-            xy (np.ndarray): Array of shape (n, 2) containing the (x, y) coordinates of the points.
-            neighbor_max_distance (float): Maximum distance between two points for them to be considered neighbors.
-            non_neighbor_distance_interval (Tuple[float, float]): Tuple containing the minimum and maximum distance between two
+            xy (np.ndarray): Array of shape (n, 2) containing the (x, y) coordinates of
+                the points.
+            neighbor_max_distance (float): Maximum distance between two points for them
+                to be considered neighbors.
+            non_neighbor_distance_interval (Tuple[float, float]): Tuple containing the
+                minimum and maximum distance between two
             points for them to be considered non-neighbors.
 
         Returns:

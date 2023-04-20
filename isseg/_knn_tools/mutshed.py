@@ -1,5 +1,5 @@
-from typing import Dict, Tuple, Set
 from math import isnan
+from typing import Any, Dict, List, Set, Tuple
 
 
 class UnionFind:
@@ -102,13 +102,13 @@ def _add_mutex(roots: Tuple[int, int], exclusive_set: Dict[int, Set[int]]):
     exclusive_set[roots[1]].add(roots[0])
 
 
-def _make_output(vertices: Set[int], inclusive_set: UnionFind):
+def _make_output(vertices: List[int], inclusive_set: UnionFind):
     labels = [inclusive_set[v] for v in vertices]
-    unique_labels = list({l for l in labels})
+    unique_labels = list({label for label in labels})
 
     # Remap labels to start from 0
-    label2newlabel = {l: i for i, l in enumerate(unique_labels)}
-    return {v: label2newlabel[l] for v, l in zip(vertices, labels)}
+    label2newlabel = {unique_label: i for i, unique_label in enumerate(unique_labels)}
+    return {v: label2newlabel[label] for v, label in zip(vertices, labels)}
 
 
 def _make_edge_iterator(edge_weights: Dict[Tuple[int, int], float], progress):
@@ -118,7 +118,7 @@ def _make_edge_iterator(edge_weights: Dict[Tuple[int, int], float], progress):
     if progress:
         from tqdm.auto import tqdm
 
-        edge_iter = tqdm(edges, total=(len(edges)))
+        edge_iter: Any = tqdm(edges, total=(len(edges)))
     else:
         edge_iter = edges
     for edge in edge_iter:
@@ -130,7 +130,7 @@ def _check_edges(edge_weights: Dict[Tuple[int, int], float]):
     for edge, weight in edge_weights.items():
         if edge[1] <= edge[0]:
             raise ValueError(
-                "Edges must be tuples where the first entry is strictly less than the second."
+                "Edges must be tuples where the first entry is smaller than the second."
             )
         if isnan(weight):
             raise ValueError("Edge weight must not be nan.")
@@ -140,12 +140,13 @@ def mutshed(
     edge_weights: Dict[Tuple[int, int], float], progress: bool = False
 ) -> Dict[int, int]:
     """
-    Partitions a signed graph using the Mutex Watershed algorithm (https://arxiv.org/pdf/1904.12654.pdf).
+    Partitions a signed graph using the Mutex Watershed algorithm
+    (https://arxiv.org/pdf/1904.12654.pdf).
 
     Args:
         edge_weights (Dict[Tuple[int,int],float]): A dictionary containing the
-            signed weights of the edges in the graph. Each key is a tuple of two integers
-            representing the vertices of the edge, and each value is a float
+            signed weights of the edges in the graph. Each key is a tuple of two
+            integers representing the vertices of the edge, and each value is a float
             representing the attractive (positive)  or repulsive (negative) strength.
             of the edge.
         progress (bool, optional): Whether to display a progress bar while the
@@ -153,8 +154,8 @@ def mutshed(
             to be installed. Defaults to False.
 
     Returns:
-        Dict[int, int]: A dictionary with that maps each vertex to a component partitioned
-        by the algorithm.
+        Dict[int, int]: A dictionary with that maps each vertex to a component
+        partitioned by the algorithm.
 
     Raises:
         ImportError: If `progress` is True but the `tqdm` package is not installed.
@@ -164,7 +165,7 @@ def mutshed(
     vertices = list({vertex for edge in edge_weights.keys() for vertex in edge})
     edge_iterator = _make_edge_iterator(edge_weights, progress)
     inclusive_set = UnionFind()
-    exclusive_set = {v: set({}) for v in vertices}
+    exclusive_set: Dict[int, set] = {v: set({}) for v in vertices}
 
     active_set = {}
     for edge, weight in edge_iterator:

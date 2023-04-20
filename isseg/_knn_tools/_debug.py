@@ -1,7 +1,11 @@
-from scipy.sparse import spmatrix
-import numpy as np
-import matplotlib.pyplot as plt
+# FIXME: the _debug module should not exist anymore, which is why the imports
+# (specifically, matplotlib) are not included in install_requires
+
 import random
+
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np
+from scipy.sparse import spmatrix
 
 random.seed(32)
 np.random.seed(32)
