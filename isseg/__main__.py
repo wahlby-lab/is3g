@@ -8,7 +8,7 @@ import pandas as pd
 @click.argument("csv_out", type=click.Path(exists=False, dir_okay=False))
 @click.option("--x", type=str, default="x", help="TODO")
 @click.option("--y", type=str, default="y", help="TODO")
-@click.option("--labels", type=str, default="labels", help="TODO")
+@click.option("--label", type=str, default="label", help="TODO")
 @click.option("--radius", type=click.FloatRange(min=0), default=1, help="TODO")
 @click.option("--remove_background", type=bool, default=True, help="TODO")
 def main(
@@ -16,7 +16,7 @@ def main(
     csv_out: str,
     x: str,
     y: str,
-    labels: str,
+    label: str,
     radius: float,
     remove_background: bool = True,
 ):
@@ -28,7 +28,7 @@ def main(
         data,
         x=x,
         y=y,
-        labels=labels,
+        label=label,
         radius=radius,
         remove_background=remove_background,
     )
