@@ -1,37 +1,20 @@
 # isseg
 
-TODO: add badges (see https://shields.io)
-
-Foobar is a Python library for dealing with word pluralization.
+In Situ Sequencing Segmentation
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install isseg:
 
-```bash
-pip install foobar
-```
+    pip install isseg
 
 ## Usage
 
-```python
-import foobar
-
-# returns 'words'
-foobar.pluralize('word')
-
-# returns 'geese'
-foobar.pluralize('goose')
-
-# returns 'phenomenon'
-foobar.singularize('phenomena')
-```
-
-TODO: add link to examples
+Examples can be found in the [examples](examples) directory.
 
 ## Support
 
-TODO: explain how people can raise issues
+If you find a bug, please [raise an issue](https://github.com/wahlby-lab/isseg/issues/new).
 
 ## Contributing
 
@@ -40,7 +23,9 @@ to discuss what you would like to change.
 
 ## Authors
 
-Axel Andersson, Andrea Behanova
+[Axel Andersson](mailto:axel.andersson@it.uu.se)
+
+[Andrea Behanova](mailto:andrea.behanova@it.uu.se)
 
 ## License
 
