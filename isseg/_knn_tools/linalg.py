@@ -42,7 +42,7 @@ def connectivity_matrix(
 
 
 def attribute_matrix(
-    cat: np.ndarray, unique_cat: np.ndarray = "auto", return_encoder: bool = False
+    cat: np.ndarray, unique_cat:np.ndarray = "auto", return_encoder: bool = False
 ):
     """
     Compute the attribute matrix from categorical data, based on one-hot encoding.
@@ -67,8 +67,11 @@ def attribute_matrix(
         The encoder object, only returned if `return_encoder` is True.
     """
     X = np.array(cat).reshape((-1, 1))
-    if unique_cat != "auto":
+    if not isinstance(unique_cat, str):
         unique_cat = [np.array(unique_cat)]
+    else:
+        if unique_cat != 'auto':
+            raise ValueError(f'`unique_cat` must be a numpy array or the string `auto`.')
     encoder = OneHotEncoder(categories=unique_cat, sparse=True, handle_unknown="ignore")
     encoder.fit(X)
     y = encoder.transform(X)
