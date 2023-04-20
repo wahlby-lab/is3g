@@ -1,13 +1,15 @@
 from typing import Dict, Tuple, Set
 from math import isnan
 
-class UnionFind:     
+
+class UnionFind:
     """
-        Union-find data structure. Based on Josiah Carlson's code,
-        https://code.activestate.com/recipes/215912/
-        with additional changes by D. Eppstein.
-        http://www.ics.uci.edu/~eppstein/PADS/UnionFind.py
+    Union-find data structure. Based on Josiah Carlson's code,
+    https://code.activestate.com/recipes/215912/
+    with additional changes by D. Eppstein.
+    http://www.ics.uci.edu/~eppstein/PADS/UnionFind.py
     """
+
     def __init__(self):
         self.node_weights = {}
         self.node_parent = {}
@@ -27,14 +29,16 @@ class UnionFind:
         for ancestor in path:
             self.node_parent[ancestor] = root
         return root
-        
+
     def __iter__(self):
         return iter(self.node_parent)
 
     def union(self, *objects):
         roots = iter(
             sorted(
-                {self[x] for x in objects}, key=lambda r: self.node_weights[r], reverse=True
+                {self[x] for x in objects},
+                key=lambda r: self.node_weights[r],
+                reverse=True,
             )
         )
         try:
@@ -45,58 +49,75 @@ class UnionFind:
         for r in roots:
             self.node_weights[root] += self.node_weights[r]
             self.node_parent[r] = root
-       
+
         path = [root]
         root = self.node_parent[root]
-      
+
         for ancestor in path:
             self.node_parent[ancestor] = root
 
-def _is_mutex(roots:Tuple[int,int], inclusive_set:UnionFind, exclusive_set:Dict[int,Set[int]]):
-    return (roots[1] in exclusive_set[roots[0]]) or (roots[0] in exclusive_set[roots[1]])
-def _is_connected(roots:Tuple[int,int]):
+
+def _is_mutex(
+    roots: Tuple[int, int], inclusive_set: UnionFind, exclusive_set: Dict[int, Set[int]]
+):
+    return (roots[1] in exclusive_set[roots[0]]) or (
+        roots[0] in exclusive_set[roots[1]]
+    )
+
+
+def _is_connected(roots: Tuple[int, int]):
     return roots[0] == roots[1]
+
+
 def _replace(s, remove, add):
     s.remove(remove)
     s.add(add)
-def _inheret(roots:Tuple[int,int], incl:UnionFind, excl:Dict[int,Set[int]]):
+
+
+def _inheret(roots: Tuple[int, int], incl: UnionFind, excl: Dict[int, Set[int]]):
     heaviest, lightest = tuple(
-        sorted(
-            {r for r in roots}, key=lambda r: incl.node_weights[r], reverse=True
-        )
+        sorted({r for r in roots}, key=lambda r: incl.node_weights[r], reverse=True)
     )
     excl[heaviest] = excl[heaviest].union(excl[lightest])
     # Replace old reference to the lightest set
-    # with reference to the heavier set. 
+    # with reference to the heavier set.
     # This will remove redundant mutex constraints.
     for v in excl[lightest]:
         _replace(excl[v], lightest, heaviest)
     excl[lightest] = set({})
-def _merge(ij:Tuple[int,int], roots:Tuple[int,int], inclusive_set:UnionFind, exclusive_set:Dict[int,Set[int]]):
+
+
+def _merge(
+    ij: Tuple[int, int],
+    roots: Tuple[int, int],
+    inclusive_set: UnionFind,
+    exclusive_set: Dict[int, Set[int]],
+):
     _inheret(roots, inclusive_set, exclusive_set)
-    inclusive_set.union(ij[0],ij[1])
-def _add_mutex(roots:Tuple[int,int], exclusive_set:Dict[int,Set[int]]):
+    inclusive_set.union(ij[0], ij[1])
+
+
+def _add_mutex(roots: Tuple[int, int], exclusive_set: Dict[int, Set[int]]):
     exclusive_set[roots[0]].add(roots[1])
     exclusive_set[roots[1]].add(roots[0])
-def _make_output(vertices:Set[int], inclusive_set:UnionFind):
+
+
+def _make_output(vertices: Set[int], inclusive_set: UnionFind):
     labels = [inclusive_set[v] for v in vertices]
     unique_labels = list({l for l in labels})
 
     # Remap labels to start from 0
-    label2newlabel = {l : i for i,l in enumerate(unique_labels)}
-    return {
-        v : label2newlabel[l] for v,l in zip(vertices,labels)
-    }
-def _make_edge_iterator(edge_weights:Dict[Tuple[int,int],float], progress):
+    label2newlabel = {l: i for i, l in enumerate(unique_labels)}
+    return {v: label2newlabel[l] for v, l in zip(vertices, labels)}
+
+
+def _make_edge_iterator(edge_weights: Dict[Tuple[int, int], float], progress):
     edges = list(edge_weights.keys())
-    edges = sorted(
-        edges, 
-        key=lambda t: abs(edge_weights[t]), 
-        reverse=True
-    )
+    edges = sorted(edges, key=lambda t: abs(edge_weights[t]), reverse=True)
 
     if progress:
         from tqdm.auto import tqdm
+
         edge_iter = tqdm(edges, total=(len(edges)))
     else:
         edge_iter = edges
@@ -104,16 +125,19 @@ def _make_edge_iterator(edge_weights:Dict[Tuple[int,int],float], progress):
         w = edge_weights[edge]
         yield edge, w
 
-def _check_edges(edge_weights:Dict[Tuple[int,int],float]):
-    for edge,weight in edge_weights.items():
+
+def _check_edges(edge_weights: Dict[Tuple[int, int], float]):
+    for edge, weight in edge_weights.items():
         if edge[1] <= edge[0]:
-            raise ValueError(f'Edges must be tuples where the first entry is strictly less than the second.')
+            raise ValueError(
+                "Edges must be tuples where the first entry is strictly less than the second."
+            )
         if isnan(weight):
-            raise ValueError(f'Edge weight must not be nan.')    
+            raise ValueError("Edge weight must not be nan.")
+
 
 def mutshed(
-    edge_weights:Dict[Tuple[int,int],float],
-    progress:bool=False
+    edge_weights: Dict[Tuple[int, int], float], progress: bool = False
 ) -> Dict[int, int]:
     """
     Partitions a signed graph using the Mutex Watershed algorithm (https://arxiv.org/pdf/1904.12654.pdf).
@@ -135,15 +159,12 @@ def mutshed(
     Raises:
         ImportError: If `progress` is True but the `tqdm` package is not installed.
     """
-        
 
     _check_edges(edge_weights)
-    vertices = list({
-        vertex for edge in edge_weights.keys() for vertex in edge
-    })
+    vertices = list({vertex for edge in edge_weights.keys() for vertex in edge})
     edge_iterator = _make_edge_iterator(edge_weights, progress)
     inclusive_set = UnionFind()
-    exclusive_set = {v : set({}) for v in vertices}
+    exclusive_set = {v: set({}) for v in vertices}
 
     active_set = {}
     for edge, weight in edge_iterator:
@@ -152,12 +173,11 @@ def mutshed(
             if not _is_mutex(roots, inclusive_set, exclusive_set):
                 if not _is_connected(roots):
                     _merge(edge, roots, inclusive_set, exclusive_set)
-                    active_set[edge] = weight       
+                    active_set[edge] = weight
         else:
             if not _is_connected(roots):
                 _add_mutex(roots, exclusive_set)
-                active_set[edge] = weight       
+                active_set[edge] = weight
 
-      
     out = _make_output(vertices, inclusive_set)
     return out
