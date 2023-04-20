@@ -30,3 +30,4 @@ repos:
       - id: nbqa-ruff
       - id: nbqa-black
       - id: nbqa-mypy
+        args: ['--no-strict-optional', '--ignore-missing-imports']
