@@ -1,8 +1,6 @@
-# Standard library imports
 import random
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-# Third-party imports
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -20,8 +18,6 @@ from ._knn_tools.edges import (
     knn_undirected_edges,
 )
 from ._knn_tools.linalg import kde_per_label
-
-# Local imports
 from ._knn_tools.mutshed import mutshed
 
 
