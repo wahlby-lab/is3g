@@ -22,10 +22,12 @@ repos:
     rev: v1.2.0
     hooks:
       - id: mypy
+        args: [--ignore-missing-imports, --scripts-are-modules]
   - repo: https://github.com/nbQA-dev/nbQA
     rev: '1.7.0'
     hooks:
       - id: nbqa-ruff
+        args: [--fix, --exit-non-zero-on-fix]
       - id: nbqa-black
       - id: nbqa-mypy
-        args: [--no-strict-optional, --ignore-missing-imports]
+        args: [--ignore-missing-imports, --scripts-are-modules]
