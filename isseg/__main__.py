@@ -11,7 +11,6 @@ import pandas as pd
 @click.option("--labels", type=str, default="labels", help="TODO")
 @click.option("--radius", type=click.FloatRange(min=0), default=1, help="TODO")
 @click.option("--remove_background", type=bool, default=True, help="TODO")
-
 def main(
     csv_path: str,
     csv_out: str,
@@ -26,11 +25,17 @@ def main(
 
     # Run the clustering
     clusters = isseg(
-        data, x=x, y=y, labels=labels, radius=radius, remove_background=remove_background
+        data,
+        x=x,
+        y=y,
+        labels=labels,
+        radius=radius,
+        remove_background=remove_background,
     )
 
-    data['isseg'] = clusters
+    data["isseg"] = clusters
     data.to_csv(csv_out, index=False)
+
 
 if __name__ == "__main__":
     main()
