@@ -10,7 +10,33 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install isseg:
 
 ## Usage
 
-Examples can be found in the [examples](examples) directory.
+Jupyter notebook examples using the `isseg` python API can be found in the [examples](examples) directory.
+
+You can also use the `isseg` command to execute isseg from the command-line. For example:
+```console
+$ isseg examples/data.csv examples/data_out.csv --x X --y Y --label Gene --radius 22.5
+Training on device: cpu
+Epoch 222: loss=0.461070, accuracy=0.784571:
+44%|████████████████████████████                                         | 221/500 [00:06<00:08, 34.86it/s]
+Stopping early at epoch 221 with loss 0.4128
+```
+
+You can list all options with:
+
+```console
+$ isseg --help
+Usage: isseg [OPTIONS] CSV_PATH CSV_OUT
+
+Options:
+  -x, --x TEXT                    TODO
+  -y, --y TEXT                    TODO
+  -l, --label TEXT                TODO
+  -r, --radius FLOAT RANGE        TODO  [x>=0]
+  --remove-background / --no-remove-background
+                                  TODO
+  --version                       Show the version and exit. 
+  --help                          Show this message and exit.
+```
 
 ## Support
 
