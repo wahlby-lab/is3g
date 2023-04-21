@@ -73,9 +73,11 @@ def attribute_matrix(
     """
     X = np.array(cat).reshape((-1, 1))
     if not isinstance(unique_cat, str):
-        unique_cat_list = [np.array(unique_cat)]
+        unique_cat_list: Union[List[np.ndarray], Literal["auto"]] = [
+            np.array(unique_cat)
+        ]
     elif unique_cat == "auto":
-        unique_cat_list: Union[List[np.ndarray], Literal["auto"]] = "auto"
+        unique_cat_list = "auto"
     else:
         raise ValueError("`unique_cat` must be a numpy array or the string `auto`.")
     encoder = OneHotEncoder(
