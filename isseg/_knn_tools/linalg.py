@@ -72,10 +72,10 @@ def attribute_matrix(
         The encoder object, only returned if `return_encoder` is True.
     """
     X = np.array(cat).reshape((-1, 1))
-    if unique_cat == "auto":
-        unique_cat_list: Union[List[np.ndarray], Literal["auto"]] = "auto"
-    elif not isinstance(unique_cat, str):
+    if not isinstance(unique_cat, str):
         unique_cat_list = [np.array(unique_cat)]
+    elif unique_cat == "auto":
+        unique_cat_list: Union[List[np.ndarray], Literal["auto"]] = "auto"
     else:
         raise ValueError("`unique_cat` must be a numpy array or the string `auto`.")
     encoder = OneHotEncoder(
