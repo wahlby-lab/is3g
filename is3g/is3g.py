@@ -217,7 +217,7 @@ class SiameseNet(nn.Module):
         return self.score_edge(x, y, attractive)
 
 
-def isseg(
+def is3g(
     data: pd.DataFrame,
     x: str,
     y: str,

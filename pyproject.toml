@@ -6,4 +6,4 @@ build-backend = "setuptools.build_meta"
 select = ["E", "F", "I"]
 
 [tool.setuptools_scm]
-write_to = "isseg/_version.py"
+write_to = "is3g/_version.py"

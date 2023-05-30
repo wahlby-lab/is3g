@@ -1,6 +1,6 @@
 best-model.pt
 /.vscode/
-/isseg/_version.py
+/is3g/_version.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

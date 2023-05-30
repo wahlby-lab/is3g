@@ -1,8 +1,8 @@
 import click
 import pandas as pd
 
-from isseg import __version__ as version
-from isseg.isseg import isseg
+from is3g import __version__ as version
+from is3g.is3g import is3g
 
 
 @click.command()
@@ -27,7 +27,7 @@ def main(
     data = pd.read_csv(csv_path)
 
     # Run the clustering
-    clusters = isseg(
+    clusters = is3g(
         data,
         x=x,
         y=y,
@@ -36,7 +36,7 @@ def main(
         remove_background=remove_background,
     )
 
-    data["isseg"] = clusters
+    data["is3g"] = clusters
     data.to_csv(csv_out, index=False)
 
 
