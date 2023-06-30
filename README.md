@@ -1,4 +1,4 @@
-# issseg
+# is3g
 
 In Situ Sequencing Segmentation
 
