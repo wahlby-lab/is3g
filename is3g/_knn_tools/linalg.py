@@ -223,8 +223,9 @@ def maximal_degree_matrix(A: sp.spmatrix) -> sp.spmatrix:
     return sp.csr_matrix((values, (rows, cols)), shape=(n, A.shape[0]))
 
 
+
 def spatial_binning_matrix(
-    xy: np.ndarray, box_width: float, return_size: bool = False
+    xy: np.ndarray, box_width: float, return_grid_props: bool = False, xy_min=None, xy_max=None
 ) -> sp.spmatrix:
     """
     Compute a sparse matrix that indicates which points in a point cloud fall in which
@@ -234,7 +235,6 @@ def spatial_binning_matrix(
     points (numpy.ndarray): An array of shape (N, D) containing the D-dimensional
         coordinates of N points in the point cloud.
     box_width (float): The width of the bins in which to group the points.
-    return_size (bool): Wether the sie of the grid should be returned. Default False.
 
     Returns:
     sp.spmatrix: A sparse matrix of shape (num_bins, N) where num_bins is the number of
@@ -251,7 +251,15 @@ def spatial_binning_matrix(
     """
 
     # Compute shifted coordinates
-    mi, ma = xy.min(axis=0, keepdims=True), xy.max(axis=0, keepdims=True)
+    if xy_min is None:
+        mi = xy.min(axis=0, keepdims=True)
+    else:
+        mi = np.array(xy_min).reshape((1,-1))
+
+    if xy_max is None:
+        ma = xy.max(axis=0, keepdims=True)
+    else:
+        ma = np.array(xy_max).reshape((1,-1))
     xys = xy - mi
 
     # Compute grid size
@@ -267,20 +275,25 @@ def spatial_binning_matrix(
     size = grid // box_width + 1
     size = tuple(x for x in size.astype("int"))
 
-    # All gird coordinates
-    all_grid_coords = tuple(
-        s.flatten() for s in np.meshgrid(*tuple(np.arange(s) for s in size))
-    )
-    all_linear_coords = np.ravel_multi_index(all_grid_coords, size, order="F")
-
     # Convert bin_ids to integers
     linear_ind = np.ravel_multi_index(bin_ids, size)
 
     # Create a matrix indicating which markers fall in what bin
-    bin_matrix, _ = attribute_matrix(linear_ind, unique_cat=all_linear_coords)
+    bin_matrix, linear_unique_bin_ids = attribute_matrix(linear_ind)
+    
+
     bin_matrix = bin_matrix.T
 
-    return (bin_matrix, size) if return_size else bin_matrix
+    if return_grid_props:
+        sub_unique_bin_ids = np.unravel_index(linear_unique_bin_ids, size)    
+        grid_props = dict(
+            grid_coords=sub_unique_bin_ids,
+            grid_size=size,
+            grid_offset=mi.flatten(),
+            grid_scale=1.0/box_width
+        )
+
+    return (bin_matrix, grid_props) if return_grid_props else bin_matrix
 
 
 def kde(xy: np.ndarray, sigma: float, box_width: float = 1) -> np.ndarray:
@@ -366,7 +379,7 @@ def kde_per_label(xy: np.ndarray, labels: np.ndarray, sigma: float):
             `labels`.
     """
     att, unqiue_labels = attribute_matrix(labels)
-    adj = connectivity_matrix(xy, method="radius", r=3.0 * sigma)
+    adj = connectivity_matrix(xy, method="radius", r=3.0 * sigma, include_self=True)
     row, col = adj.nonzero()
     d2 = np.linalg.norm(xy[row] - xy[col], axis=1) ** 2
     a2 = np.exp(-d2 / (2 * sigma * sigma))

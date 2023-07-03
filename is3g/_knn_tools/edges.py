@@ -6,7 +6,35 @@ import scipy.sparse as sp
 from scipy.spatial import cKDTree
 
 from .linalg import connectivity_matrix, spatial_binning_matrix
+from scipy.spatial import Delaunay
 
+
+def delauny_edges(xy: np.ndarray) -> List[Tuple[int, int]]:
+    # Perform Delaunay triangulation
+    tri = Delaunay(xy)
+    
+    # Get the indices of the vertices forming each triangle
+    triangles = tri.simplices
+    
+    # Create a set to store the unique edges
+    edges_set = set()
+    
+    # Iterate over each triangle
+    for triangle in triangles:
+        # Get the indices of the vertices forming the edges
+        edge1 = (triangle[0], triangle[1])
+        edge2 = (triangle[1], triangle[2])
+        edge3 = (triangle[2], triangle[0])
+        
+        # Add the edges to the set
+        edges_set.add(edge1)
+        edges_set.add(edge2)
+        edges_set.add(edge3)
+    
+    # Convert the set of edges to a list
+    edges = list(edges_set)
+    edges = [(min(e0,e1),max(e0,e1)) for e0,e1 in edges if e0 != e1]    
+    return edges
 
 def knn_undirected_edges(xy: np.ndarray, k: int) -> List[Tuple[int, int]]:
     """
@@ -246,6 +274,121 @@ class PairSampler:
                     if len(self._bin_matrix[bin_id_p2]):
                         p2 = _choose_one(self._bin_matrix[bin_id_p2])
                         return p1, p2
+
+    def _pick_point(self):
+        if self._counter == len(self._queue):
+            self._queue = [i for i in range(len(self._points))]
+            random.shuffle(self._queue)
+            self._counter = 0
+        output = self._queue[self._counter]
+        self._counter += 1
+        return output
+
+
+class SimCLRSampler:
+    def __init__(
+        self,
+        xy: np.ndarray,
+        neighbor_max_distance: float,
+        non_neighbor_distance_interval: Tuple[float, float],
+    ):
+        """
+        Initializes the PairSampler object.
+
+        Args:
+            xy (np.ndarray): Array of shape (n, 2) containing the (x, y) coordinates of
+                the points.
+            neighbor_max_distance (float): Maximum distance between two points for them
+                to be considered neighbors.
+            non_neighbor_distance_interval (Tuple[float, float]): Tuple containing the
+                minimum and maximum distance between two
+            points for them to be considered non-neighbors.
+
+        Returns:
+            None
+        """
+
+        self.r_min = non_neighbor_distance_interval[0]
+        # Find positive neighbors
+        self._positive_neighbors = cKDTree(xy).query_ball_point(
+            xy, neighbor_max_distance
+        )
+        # No self loops
+        self._positive_neighbors = [
+            [j for j in n if i != j] for i, n in enumerate(self._positive_neighbors)
+        ]
+        self.xy = xy
+        # Bin data
+        bin_width = non_neighbor_distance_interval[0] / 3.0
+        bin_matrix = spatial_binning_matrix(xy, bin_width)
+
+        # Keep only non-empty bins
+        non_empty_bins = bin_matrix.sum(axis=1).A.flatten() > 0
+        # Keep only id of non_empty bins
+        bin_matrix = bin_matrix[non_empty_bins]
+        self._bin_ids = bin_matrix.argmax(axis=0).A.flatten()
+        # Get number of points
+        self._points = list(np.arange(len(xy)))
+        # Get location of the bins
+        bin_locations = (bin_matrix @ xy) / bin_matrix.sum(axis=1)
+        bin_locations = bin_locations.A
+
+        self._neighboring_bins = cKDTree(bin_locations / bin_width).query_ball_point(
+            bin_locations / bin_width, non_neighbor_distance_interval[1] / bin_width
+        )
+        p = np.array([i for i, n in enumerate(self._neighboring_bins) for _ in n])
+        q = np.array([j for i, n in enumerate(self._neighboring_bins) for j in n])
+        dist = np.linalg.norm(bin_locations[p] - bin_locations[q], axis=1)
+        adj = sp.csr_matrix(
+            (dist, (p, q)), shape=(len(bin_locations), len(bin_locations))
+        )
+        adj = adj > non_neighbor_distance_interval[0]
+        self._neighboring_bins = adj.tolil().rows
+        self._bin_matrix = bin_matrix.tolil().rows
+
+        # Prepare a queue
+        self._queue = [i for i in range(len(self._points))]
+        self._counter = 0
+        random.shuffle(self._queue)
+
+    def sample(self, neighbor: bool) -> Tuple[int, int]:
+        """
+        Sample a pair of points from the provided data array.
+
+        Args:
+            neighbor (bool): A boolean indicating whether to sample a pair of
+                neighboring points or not.
+
+        Returns:
+            A tuple of two integers representing the indices of the sampled
+            points. If `neighbor=True`, the sampled pair of points will be
+            neighbors, i.e., their distance will be less than
+            `neighbor_max_distance`. If `neighbor=False`, the sampled pair of
+            points will not be neighbors, i.e., their distance will be greater
+            than or equal to `r_min`.
+        """
+
+        while True:
+            anchor = self._pick_point()
+            if len(self._positive_neighbors[anchor]):
+                gt = _choose_one(self._positive_neighbors[anchor])
+                negatives = []
+                for _ in range(50):
+                    bin_id_p1 = self._bin_ids[anchor]
+                    if len(self._neighboring_bins[bin_id_p1]):
+                        bin_id_p2 = _choose_one(self._neighboring_bins[bin_id_p1])
+                        if len(self._bin_matrix[bin_id_p2]):
+                            negative = _choose_one(self._bin_matrix[bin_id_p2])
+                            negatives.append(negative)
+                negatives.append(gt)
+                negatives = np.array(negatives)
+                ind = np.arange(len(negatives))
+                random.shuffle(ind)
+                negatives = negatives[ind]
+                gt = np.where(ind==50)[0]
+                break
+        return anchor, gt, negatives
+
 
     def _pick_point(self):
         if self._counter == len(self._queue):

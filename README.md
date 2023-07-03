@@ -1,4 +1,4 @@
-# issseg
+# IS3G
 
 In Situ Sequencing Segmentation
 
@@ -10,7 +10,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install is3g:
 
 ## Usage
 
-Jupyter notebook examples using the `is3g` python API can be found in the [examples](examples) directory.
+See [example.ipynb](this) Jupyter Notebook for a minimal example.
 
 You can also use the `is3g` command to execute is3g from the command-line. For example:
 ```console
@@ -28,19 +28,26 @@ $ is3g --help
 Usage: is3g [OPTIONS] CSV_PATH CSV_OUT
 
 Options:
-  -x, --x TEXT                    TODO
-  -y, --y TEXT                    TODO
-  -l, --label TEXT                TODO
-  -r, --radius FLOAT RANGE        TODO  [x>=0]
+  -x, --x TEXT                    Column in the CSV file where the x coordinate is stored for each gene.
+
+  -y, --y TEXT                    Column in the CSV file where the y coordinate is stored for each gene.
+
+  -l, --label TEXT                Column in the CSV file where the gene labels are stored.
+  
+  -r, --radius FLOAT RANGE        Approximate radius of a cell.  [x>=0]
+  
   --remove-background / --no-remove-background
-                                  TODO
+                                  Specify whether to automatically remove genes from low-density regions. Default is true.
+  
   --version                       Show the version and exit. 
+  
   --help                          Show this message and exit.
 ```
 
+
 ## Support
 
-If you find a bug, please [raise an issue](https://github.com/wahlby-lab/is3g/issues/new).
+If (when) you find a bug, please [raise an issue](https://github.com/wahlby-lab/is3g/issues/new).
 
 ## Contributing
 

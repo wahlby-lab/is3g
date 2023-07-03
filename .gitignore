@@ -1,12 +1,20 @@
 best-model.pt
+examples/best-model.pt
+is3g/best-model.pt
 /.vscode/
 /is3g/_version.py
+.tissuumaps
+plots
+run_experiments.py
+benchmark.py
+simulated_data.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+benchmark.py
+iss_simulated.csv
 # C extensions
 *.so
 
